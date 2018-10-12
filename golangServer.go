@@ -38,12 +38,18 @@ func (c *Counter) Increment() (count int) {
 	return
 }
 
-// Get time in nanos
+// Get time in microseconds
+// getting time in microseconds, due to the fact that
+// milliseconds seem to not provide enough resolution
+// for this small server
 func makeTimestamp() int64 {
 	return time.Now().UnixNano()/int64(time.Microsecond)
 }
 
 // ShiftPath splits off the first component of p
+// to the head, and all else in the tail,
+// if there is only one element in the path, tail
+// will contain a "/"
 func ShiftPath(p string) (head, tail string) {
 	p = path.Clean("/" + p)
 	i := strings.Index(p[1:], "/") + 1
@@ -63,6 +69,7 @@ type App struct {
 
 }
 
+// ServeHTTP method for App
 func (h *App) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	var head string
 	head, req.URL.Path = ShiftPath(req.URL.Path)
@@ -132,10 +139,12 @@ func (h *HashHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 }
 
+// StatsHandler object/struct
 type StatsHandler struct {
 	// Handlers under the /stats path go here
 }
 
+// ServeHTTP method for StatsHandler
 func (h *StatsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "application/json")
@@ -154,26 +163,18 @@ func (h *StatsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(res, `{"total": %d, "average": %f}`, total, average)
 }
 
+// ShutdownHandler object/struct
 type ShutdownHandler struct {
 	// Handlers under the /shutdown path go here
 }
 
+// ServerHTTP method for ShutdownHandler
 func (h *ShutdownHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	fmt.Fprintf(res, "shutdown recieved, shutting down")
 	go graceful()
 }
 
-// e.g. http.HandleFunc("/health-check", HealthCheckHandler)
-//func healthCheckHandler(responseWriter http.ResponseWriter, req *http.Request) {
-//	// A very simple health check.
-//	responseWriter.WriteHeader(http.StatusOK)
-//	responseWriter.Header().Set("Content-Type", "application/json")
-//
-//	// In the future we could report back on the status of our DB, or our cache
-//	// (e.g. Redis) by performing a simple PING, and include them in the response.
-//	fmt.Fprintf(responseWriter, `{"alive": true}`)
-//}
-
+// Wait for delay, hash the password, and store it in the passwordMap
 func hashAndInsert(password string, reqNumber int, delaySeconds int) {
 	time.Sleep(time.Duration(delaySeconds) * time.Second)
 	passwordHash := hash(password)
@@ -188,6 +189,7 @@ func hash(password string) string {
 	return base64.StdEncoding.EncodeToString(b)
 }
 
+// Stop the server gracefully, and kill it after a timeout if needed
 func graceful() {
 	timeout := 10*time.Second
 
