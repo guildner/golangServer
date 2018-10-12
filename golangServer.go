@@ -38,6 +38,11 @@ func (c *Counter) Increment() (count int) {
 	return
 }
 
+// Get current count
+func (c *Counter) Count() (count int) {
+	return
+}
+
 // Get time in microseconds
 // getting time in microseconds, due to the fact that
 // milliseconds seem to not provide enough resolution
@@ -148,7 +153,7 @@ type StatsHandler struct {
 func (h *StatsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "application/json")
-	total := postCount
+	total := postCount.Count()
 	var average float64
 	var sum int64
 	average = 0
@@ -157,7 +162,7 @@ func (h *StatsHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			sum += postStats[i]
 		}
 		//Response times were well under a millisecond, so this...
-		average = float64(sum / int64(len(postStats))) / 1000.0
+		average = float64(sum / int64(total)) / 1000.0
 	}
 
 	fmt.Fprintf(res, `{"total": %d, "average": %f}`, total, average)
